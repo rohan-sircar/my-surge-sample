@@ -1,0 +1,2 @@
+curl -X POST -H "content-type: application/json" -i http://localhost:8080/bank-accounts/create --data '{"accountNumber":"4317c6cf-438c-4f36-8391-7b6b36a0e2d9","accountOwner":"foobar","securityCode":"sfwefwqefq","initialBalance":100000}'
+curl -X GET http://localhost:8080/bank-accounts/4317c6cf-438c-4f36-8391-7b6b36a0e2d9
