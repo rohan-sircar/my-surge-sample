@@ -7,14 +7,14 @@ You then need to create two topics, one for events and another for state:
 
 `bin/kafka-topics.sh --create --topic library-events --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1`
 
-`bin/kafka-topics.sh --create --topic library-store --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1`
+`bin/kafka-topics.sh --create --topic library-state --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1`
 
 You can create a book account this way:
 
 ```
 curl -X POST -H "content-type: application/json" \
 -i http://localhost:8080/library/books \
---data'{"authorName":"foobar","title":"verysecret"}'
+--data '{"authorName":"foobar","title":"verysecret"}'
 ```
 
 And retrieve a book this way:

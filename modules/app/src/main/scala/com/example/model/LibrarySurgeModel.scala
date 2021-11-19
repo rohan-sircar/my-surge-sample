@@ -18,18 +18,22 @@ import com.example.event._
 
 import java.util.UUID
 
-object LibrarySurgeModel
+import org.graalvm.polyglot.Context
+
+class LibrarySurgeModel(ctx: Context)
     extends SurgeCommandBusinessLogic[
       UUID,
       Book,
       LibraryCommand,
       LibraryEvent
     ] {
+
+  val cm = new JsLibraryCommandModel(ctx)
   def commandModel: AggregateCommandModel[
     Book,
     LibraryCommand,
     LibraryEvent
-  ] = LibraryCommandModel
+  ] = cm
 
   def aggregateName: String = "library"
 

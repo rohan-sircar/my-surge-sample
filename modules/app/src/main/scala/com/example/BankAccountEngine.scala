@@ -7,13 +7,14 @@ import com.example.command.LibraryCommand
 import com.example.event.LibraryEvent
 import com.example.model.LibrarySurgeModel
 import surge.scaladsl.command.SurgeCommand
+import org.graalvm.polyglot.Context
 
 import java.util.UUID
 
-object LibraryEngine {
+class LibraryEngine(ctx: Context) {
   lazy val surgeEngine
       : SurgeCommand[UUID, Book, LibraryCommand, Nothing, LibraryEvent] = {
-    val engine = SurgeCommand(LibrarySurgeModel)
+    val engine = SurgeCommand(new LibrarySurgeModel(ctx))
     engine.start()
     engine
   }

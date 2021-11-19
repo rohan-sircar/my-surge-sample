@@ -19,10 +19,15 @@ import scala.io.StdIn
 import surge.internal.utils.MdcExecutionContext.mdcExecutionContext
 import com.example.command.DeleteBook
 import com.example.http.request.DeleteBookRequest
+import org.graalvm.polyglot.Context
 
 object Boot extends App with PlayJsonSupport with LibraryRequestSerializer {
 
-  implicit val system = LibraryEngine.surgeEngine.actorSystem
+  val context = Context.newBuilder().allowAllAccess(true).build()
+
+  val engine = new LibraryEngine(context)
+
+  implicit val system = engine.surgeEngine.actorSystem
   private val log = LoggerFactory.getLogger(getClass)
   private val config = ConfigFactory.load()
 
@@ -38,7 +43,7 @@ object Boot extends App with PlayJsonSupport with LibraryRequestSerializer {
                 createBookCommand.id.toString
               )
               val createdBookF: Future[Option[Book]] =
-                LibraryEngine.surgeEngine
+                engine.surgeEngine
                   .aggregateFor(createBookCommand.id)
                   .sendCommand(createBookCommand)
                   .flatMap {
@@ -51,13 +56,14 @@ object Boot extends App with PlayJsonSupport with LibraryRequestSerializer {
                 case Some(book) => complete(book)
                 case None       => complete(StatusCodes.InternalServerError)
               }
+
             }
           },
           path(JavaUUID) { uuid =>
             get {
               MDC.put("book_id", uuid.toString)
               val bookStateF =
-                LibraryEngine.surgeEngine.aggregateFor(uuid).getState
+                engine.surgeEngine.aggregateFor(uuid).getState
               log.info("Get book")
               onSuccess(bookStateF) {
                 case Some(bookState) => complete(bookState)
@@ -70,7 +76,7 @@ object Boot extends App with PlayJsonSupport with LibraryRequestSerializer {
               MDC.put("book_id", uuid.toString)
               val deleteBookCommand = requestToCommand(DeleteBookRequest(uuid))
               val bookStateF =
-                LibraryEngine.surgeEngine
+                engine.surgeEngine
                   .aggregateFor(uuid)
                   .sendCommand(deleteBookCommand)
                   .flatMap {
