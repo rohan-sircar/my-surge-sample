@@ -20,7 +20,8 @@ lazy val app = (project in file("modules/app"))
       gatlingFramework,
       "org.graalvm.sdk" % "graal-sdk" % "20.0.0",
       "org.graalvm.truffle" % "truffle-api" % "20.0.0",
-      "org.graalvm.js" % "js" % "20.0.0"
+      "org.graalvm.js" % "js" % "20.0.0",
+      "com.lihaoyi" %% "os-lib" % "0.7.1"
     ),
     publish / skip := true
   )

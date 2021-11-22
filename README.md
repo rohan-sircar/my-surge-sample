@@ -9,16 +9,12 @@ You then need to create two topics, one for events and another for state:
 
 `bin/kafka-topics.sh --create --topic library-state --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1`
 
-You can create a book account this way:
+Copy commandHandler.js and eventHandler.js from modules/app/src/main/resources to ~/surge/my-js-app on your system
 
 ```
-curl -X POST -H "content-type: application/json" \
--i http://localhost:8080/library/books \
---data '{"authorName":"foobar","title":"verysecret"}'
+curl -X POST -H "content-type: application/json" -i http://localhost:8080/library/books --data '{"action":"CreateBook","data":{"id":"688593a8-8b1f-42a0-a928-68d31cf84209","title":"foo","author":"bar"}}'
 ```
 
-And retrieve a book this way:
-`curl -X GET http://localhost:8080/library/books/4317c6cf-438c-4f36-8391-7b6b36a0e2d9`
-
-And delete:
-`curl -X DELETE http://localhost:8080/library/books/4317c6cf-438c-4f36-8391-7b6b36a0e2d9`
+```
+url -X POST -H "content-type: application/json" -i http://localhost:8080/library/books --data '{"action":"UpdateBook","data":{"id":"688593a8-8b1f-42a0-a928-68d31cf84209","title":"fooobar","author":"bar"}}'
+```

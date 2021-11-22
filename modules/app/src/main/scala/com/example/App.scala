@@ -22,6 +22,9 @@ import com.example.http.request.DeleteBookRequest
 import org.graalvm.polyglot.Context
 import java.util.UUID
 import com.example.model.Command
+import play.api.libs.json.JsValue
+import play.api.libs.json.Json
+import scala.util.Try
 
 object Boot extends App with PlayJsonSupport with LibraryRequestSerializer {
 
@@ -37,23 +40,33 @@ object Boot extends App with PlayJsonSupport with LibraryRequestSerializer {
     pathPrefix("library") {
       pathPrefix("books") {
         concat(
-          get {
-            println("reached here")
-            val f = jsEngine.surgeEngine
-              .aggregateFor(UUID.randomUUID())
-              .sendCommand(
-                Command(
-                  "some-id",
-                  """{"method":"POST","data":{"title":"foo","author":"bar"}}"""
+          post {
+            entity(as[JsValue]) { json =>
+              println("reached here")
+              val entityId =
+                Try(UUID.fromString((json \ "data" \ "id").as[String]))
+                  .getOrElse(UUID.randomUUID())
+              // val entityId = UUID.randomUUID()
+              val f = jsEngine.surgeEngine
+                .aggregateFor(entityId)
+                .sendCommand(
+                  Command(
+                    UUID.randomUUID().toString,
+                    // """{"action":"CreateBook","data":{"title":"foo","author":"bar"}}"""
+                    json
+                  )
                 )
-              )
-              .flatMap {
-                case CommandSuccess(aggregateState) =>
-                  Future.successful(aggregateState)
-                case CommandFailure(reason) => Future.failed(reason)
-              }
-            onSuccess(f) { _ => complete(StatusCodes.OK) }
+                .flatMap {
+                  case CommandSuccess(aggregateState) =>
+                    Future.successful(aggregateState)
+                  case CommandFailure(reason) => Future.failed(reason)
+                }
 
+              onSuccess(f) {
+                case Some(value) => complete(value)
+                case None        => complete(StatusCodes.BadRequest)
+              }
+            }
           }
         )
       }
