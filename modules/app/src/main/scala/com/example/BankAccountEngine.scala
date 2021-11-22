@@ -10,11 +10,23 @@ import surge.scaladsl.command.SurgeCommand
 import org.graalvm.polyglot.Context
 
 import java.util.UUID
+import com.example.model.State
+import com.example.model.Command
+import com.example.model.Event
+import com.example.model.JsSurgeModel
 
-class LibraryEngine(ctx: Context) {
+final class LibraryEngine(ctx: Context) {
   lazy val surgeEngine
       : SurgeCommand[UUID, Book, LibraryCommand, Nothing, LibraryEvent] = {
     val engine = SurgeCommand(new LibrarySurgeModel(ctx))
+    engine.start()
+    engine
+  }
+}
+
+final class JsEngine(ctx: Context) {
+  lazy val surgeEngine: SurgeCommand[UUID, State, Command, Nothing, Event] = {
+    val engine = SurgeCommand(new JsSurgeModel(ctx))
     engine.start()
     engine
   }

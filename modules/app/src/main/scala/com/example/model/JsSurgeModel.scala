@@ -20,20 +20,20 @@ import java.util.UUID
 
 import org.graalvm.polyglot.Context
 
-final class LibrarySurgeModel(ctx: Context)
+final class JsSurgeModel(ctx: Context)
     extends SurgeCommandBusinessLogic[
       UUID,
-      Book,
-      LibraryCommand,
-      LibraryEvent
+      State,
+      Command,
+      Event
     ] {
 
-  // val cm = new JsLibraryCommandModel(ctx)
+  val cm = new JsLibraryCommandModel(ctx)
   def commandModel: AggregateCommandModel[
-    Book,
-    LibraryCommand,
-    LibraryEvent
-  ] = LibraryCommandModel
+    State,
+    Command,
+    Event
+  ] = cm
 
   def aggregateName: String = "library"
 
@@ -41,21 +41,21 @@ final class LibrarySurgeModel(ctx: Context)
 
   def eventsTopic: KafkaTopic = KafkaTopic("library-events")
 
-  def aggregateReadFormatting: SurgeAggregateReadFormatting[Book] =
-    (bytes: Array[Byte]) => Json.parse(bytes).asOpt[Book]
+  def aggregateReadFormatting: SurgeAggregateReadFormatting[State] =
+    (bytes: Array[Byte]) => Json.parse(bytes).asOpt[State]
 
-  def aggregateWriteFormatting: SurgeAggregateWriteFormatting[Book] =
-    (agg: Book) => {
+  def aggregateWriteFormatting: SurgeAggregateWriteFormatting[State] =
+    (agg: State) => {
       val aggBytes = Json.toJson(agg).toString().getBytes()
-      val messageHeaders = Map("aggregate_id" -> agg.id.toString)
+      val messageHeaders = Map("aggregate_id" -> agg.aggregateId.toString)
       SerializedAggregate(aggBytes, messageHeaders)
     }
 
-  def eventWriteFormatting: SurgeEventWriteFormatting[LibraryEvent] =
-    (evt: LibraryEvent) => {
-      val evtKey = evt.id.toString
-      val evtBytes = evt.toJson.toString().getBytes()
-      val messageHeaders = Map("aggregate_id" -> evt.id.toString)
+  def eventWriteFormatting: SurgeEventWriteFormatting[Event] =
+    (evt: Event) => {
+      val evtKey = evt.aggregateId.toString
+      val evtBytes = Json.toBytes(Json.toJson(evt))
+      val messageHeaders = Map("aggregate_id" -> evt.aggregateId.toString)
       SerializedMessage(evtKey, evtBytes, messageHeaders)
     }
 }

@@ -20,14 +20,16 @@ import surge.internal.utils.MdcExecutionContext.mdcExecutionContext
 import com.example.command.DeleteBook
 import com.example.http.request.DeleteBookRequest
 import org.graalvm.polyglot.Context
+import java.util.UUID
+import com.example.model.Command
 
 object Boot extends App with PlayJsonSupport with LibraryRequestSerializer {
 
   val context = Context.newBuilder().allowAllAccess(true).build()
 
-  val engine = new LibraryEngine(context)
+  val jsEngine = new JsEngine(context)
 
-  implicit val system = engine.surgeEngine.actorSystem
+  implicit val system = jsEngine.surgeEngine.actorSystem
   private val log = LoggerFactory.getLogger(getClass)
   private val config = ConfigFactory.load()
 
@@ -35,65 +37,23 @@ object Boot extends App with PlayJsonSupport with LibraryRequestSerializer {
     pathPrefix("library") {
       pathPrefix("books") {
         concat(
-          post {
-            entity(as[CreateBookRequest]) { request =>
-              val createBookCommand = requestToCommand(request)
-              MDC.put(
-                "book_id",
-                createBookCommand.id.toString
+          get {
+            println("reached here")
+            val f = jsEngine.surgeEngine
+              .aggregateFor(UUID.randomUUID())
+              .sendCommand(
+                Command(
+                  "some-id",
+                  """{"method":"POST","data":{"title":"foo","author":"bar"}}"""
+                )
               )
-              val createdBookF: Future[Option[Book]] =
-                engine.surgeEngine
-                  .aggregateFor(createBookCommand.id)
-                  .sendCommand(createBookCommand)
-                  .flatMap {
-                    case CommandSuccess(aggregateState) =>
-                      Future.successful(aggregateState)
-                    case CommandFailure(reason) => Future.failed(reason)
-                  }
-
-              onSuccess(createdBookF) {
-                case Some(book) => complete(book)
-                case None       => complete(StatusCodes.InternalServerError)
+              .flatMap {
+                case CommandSuccess(aggregateState) =>
+                  Future.successful(aggregateState)
+                case CommandFailure(reason) => Future.failed(reason)
               }
+            onSuccess(f) { _ => complete(StatusCodes.OK) }
 
-            }
-          },
-          path(JavaUUID) { uuid =>
-            get {
-              MDC.put("book_id", uuid.toString)
-              val bookStateF =
-                engine.surgeEngine.aggregateFor(uuid).getState
-              log.info("Get book")
-              onSuccess(bookStateF) {
-                case Some(bookState) => complete(bookState)
-                case None            => complete(StatusCodes.NotFound)
-              }
-            }
-          },
-          path(JavaUUID) { uuid =>
-            delete {
-              MDC.put("book_id", uuid.toString)
-              val deleteBookCommand = requestToCommand(DeleteBookRequest(uuid))
-              val bookStateF =
-                engine.surgeEngine
-                  .aggregateFor(uuid)
-                  .sendCommand(deleteBookCommand)
-                  .flatMap {
-                    case CommandSuccess(aggregateState) =>
-                      Future.successful(aggregateState)
-                    case CommandFailure(reason) => Future.failed(reason)
-                  }
-
-              log.info("Get book")
-              // onSuccess(bookStateF) {
-              //   case Some(bookState) => complete(bookState)
-              //   case None            => complete(StatusCodes.NotFound)
-              // }
-              onSuccess(bookStateF) { _ =>
-                complete(StatusCodes.OK)
-              }
-            }
           }
         )
       }
